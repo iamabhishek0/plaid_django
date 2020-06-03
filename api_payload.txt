@@ -5,3 +5,8 @@
   "password": 1234567890
 }
 
+/api/login
+{
+  "username": "iamabhishek0",
+  "password": 9999420420
+}
