@@ -1,9 +1,10 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from plaid_link.serializers import UserSerializer, UserLoginSerializer
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, logout, login
 from rest_framework import serializers
 from rest_framework.decorators import action
 from django.contrib.auth.models import User
@@ -44,7 +45,8 @@ class UserLogin(APIView):
             if user is None:
                 raise serializers.ValidationError("Invalid username/password. Please try again!")
             else:
-                token = Token.objects.get(user=user)
+                login(request, user)
+                token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'token': token.key,
                 'user_id': user.pk,
@@ -52,3 +54,19 @@ class UserLogin(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserLogout(APIView):
+    """
+    User Logout API.
+    """
+    def post(self, request):
+        try:
+            request.user.auth_token.delete()
+        except (AttributeError, ObjectDoesNotExist):
+            pass
+
+        logout(request)
+        data = {'success': 'Sucessfully logged out'}
+        return Response(data=data, status=status.HTTP_200_OK)
+
