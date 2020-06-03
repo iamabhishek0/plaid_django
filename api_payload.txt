@@ -1,0 +1,7 @@
+/api/signup
+{
+  "email": "abhi@gmail.com",
+  "username": "iamabhishek0",
+  "password": 1234567890
+}
+
