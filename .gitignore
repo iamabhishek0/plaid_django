@@ -3,5 +3,6 @@ venv
 *.log
 *.pot
 *.pyc
-__pycache__
+__pycache__/
 db.sqlite3
+.vscode/
