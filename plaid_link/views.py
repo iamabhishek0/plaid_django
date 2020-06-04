@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, logout, login
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 
 
@@ -60,6 +61,8 @@ class UserLogout(APIView):
     """
     User Logout API.
     """
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         try:
             request.user.auth_token.delete()

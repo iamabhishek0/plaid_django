@@ -1,12 +1,24 @@
-/api/signup
+/api/signup/
 {
   "email": "abhi@gmail.com",
-  "username": "iamabhishek0",
+  "username": "iamabhi",
   "password": 1234567890
 }
 
-/api/login
+/api/login/
 {
-  "username": "iamabhishek0",
-  "password": 9999420420
+  "username": "iamabhi",
+  "password": 1234567890
 }
+
+/api/logout/
+Send with an Authorization token in the header
+https://miro.medium.com/max/1400/1*d_BLYVAO4i94u0vehgazuA.png
+See the above image for example.
+
+
+- gcloud_sql_proxy Setup
+wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+chmod +x cloud_sql_proxy
+gcloud config set project sympy-live-pr
+
