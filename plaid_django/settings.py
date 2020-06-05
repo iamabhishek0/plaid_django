@@ -90,10 +90,10 @@ if os.getenv('GAE_APPLICATION', None):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'HOST': '/cloudsql/sympy-live-pr:asia-south1:sympy',
+            'HOST': os.getenv('DATABASE_HOST'),
             'NAME': 'plaid_db',
-            'USER': 'root',
-            'PASSWORD': 'n4ez4y2Fou2tMcqe',
+            'USER': os.getenv('DATABASE_USER'),
+            'PASSWORD': os.getenv('DATABASE_PASS'),
         }
     }
 else:
@@ -109,8 +109,8 @@ else:
             'HOST': '127.0.0.1',    # DataBase's IP address
             'PORT': '3306',
             'NAME': 'plaid_db',
-            'USER': 'root',
-            'PASSWORD': 'n4ez4y2Fou2tMcqe',
+            'USER': os.getenv('DATABASE_USER'),
+            'PASSWORD': os.getenv('DATABASE_PASS'),
         }
     }
 
