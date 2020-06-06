@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -28,3 +27,7 @@ class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=300, required=True)
     password = serializers.CharField(required=True, write_only=True)
 
+
+class AccessToken(serializers.Serializer):
+    access_token = serializers.CharField(max_length=100, required=True)
+    item_id = serializers.CharField(max_length=100, required=True)

@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,7 +9,7 @@ from django.contrib.auth import authenticate, logout, login
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import User
+
 
 
 class UserCreate(APIView):
@@ -61,6 +62,7 @@ class UserLogout(APIView):
     """
     User Logout API.
     """
+    authentication_classes = (SessionAuthentication, BasicAuthentication)
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
