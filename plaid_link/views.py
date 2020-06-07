@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import render
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,8 +10,8 @@ from django.contrib.auth import authenticate, logout, login
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-
-
+from .models import Item
+from .keys import *
 
 class UserCreate(APIView):
     """
@@ -75,3 +76,18 @@ class UserLogout(APIView):
         data = {'success': 'Sucessfully logged out'}
         return Response(data=data, status=status.HTTP_200_OK)
 
+
+def index(request):
+    keys = {
+        'plaid_public_key': PLAID_PUBLIC_KEY,
+        'plaid_environment': PLAID_ENV,
+        'plaid_products': PLAID_PRODUCTS,
+        'plaid_country_codes': PLAID_COUNTRY_CODES,
+
+    }
+    return render(request, "oauth.html", context=keys)
+
+
+def home(request):
+    items = Item.objects.filter(user=request.user)
+    return render(request, 'home.html', {'items': items})
