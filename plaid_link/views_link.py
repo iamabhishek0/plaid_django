@@ -1,32 +1,20 @@
+import datetime
 import json
-import os
 import plaid
 import requests
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .serializers import AccessToken
+from .keys import *
+from .models import Item
 
-
-# Fill in your Plaid API keys - https://dashboard.plaid.com/account/keys
-PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
-PLAID_SECRET = os.getenv('PLAID_SECRET')
-PLAID_PUBLIC_KEY = os.getenv('PLAID_PUBLIC_KEY')
-# Use 'sandbox' to test with Plaid's Sandbox environment (username: user_good,
-# password: pass_good)
-# Use `development` to test with live users and credentials and `production`
-# to go live
-PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
-# PLAID_PRODUCTS is a comma-separated list of products to use when initializing
-# Link. Note that this list must contain 'assets' in order for the app to be
-# able to create and retrieve asset reports.
-PLAID_PRODUCTS = os.getenv('PLAID_PRODUCTS', 'transactions')
-
-# PLAID_COUNTRY_CODES is a comma-separated list of countries for which users
-# will be able to select institutions from.
-PLAID_COUNTRY_CODES = os.getenv('PLAID_COUNTRY_CODES', 'US')
 
 client = plaid.Client(client_id = PLAID_CLIENT_ID, secret=PLAID_SECRET,
                       public_key=PLAID_PUBLIC_KEY, environment=PLAID_ENV, api_version='2019-05-29')
+
 
 def create_public_token():
     """
@@ -36,7 +24,7 @@ def create_public_token():
     url = "https://sandbox.plaid.com/sandbox/public_token/create"
     headers = {'content-type': 'application/json'}
     payload = {
-        "institution_id": "ins_10",
+        "institution_id": "ins_5",
         "public_key": PLAID_PUBLIC_KEY,
         "initial_products": ["transactions"]
     }
@@ -52,7 +40,41 @@ class get_access_token(APIView):
         public_token = create_public_token()['public_token']
         try:
             exchange_response = client.Item.public_token.exchange(public_token)
+            serializer = AccessToken(data=exchange_response)
+            if serializer.is_valid():
+                if Item.objects.filter(user=self.request.user).count() == 0:
+                    item = Item.objects.create(access_token=serializer.validated_data['access_token'],
+                                               item_id=serializer.validated_data['item_id'],
+                                               user=self.request.user
+                                               )
+                    item.save()
+
         except plaid.errors.PlaidError as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         return Response(data=exchange_response, status=status.HTTP_200_OK)
+
+
+class get_transaction(APIView):
+    def post(self, request):
+        item = Item.objects.filter(user=self.request.user)
+        if item.count() > 0:
+            access_token = item.values('access_token')[0]['access_token']
+
+            # transaction of two years i.e. 730 days
+            start_date = '{:%Y-%m-%d}'.format(datetime.datetime.now() + datetime.timedelta(-730))
+            end_date = '{:%Y-%m-%d}'.format(datetime.datetime.now())
+
+            try:
+                transactions_response = client.Transactions.get(access_token, start_date, end_date)
+            except plaid.errors.PlaidError as e:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(data=transactions_response, status=status.HTTP_200_OK)
+
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+def webhook(request):
+    return HttpResponse('Webhook received', status=status.HTTP_202_ACCEPTED)
