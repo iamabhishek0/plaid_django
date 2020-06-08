@@ -1,8 +1,165 @@
-{% for item in items %}
-    {{ item.access_token }}
-    <br>
-    {{ item.item_id }}
-    <br>
-    {{ item.user }}
-    <br>
-{% endfor %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://threads.plaid.com/threads.css">
+
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+<div class="container">
+
+    <!--Transactions -->
+    <div class="item-data-row">
+        <div class="item-data-row__left">
+            <div class="item-data-row__request-type">post</div>
+        </div>
+        <div class="item-data-row__center">
+            <div class="item-data-row__nicename">Transactions</div>
+            <div class="item-data-row__endpoint">/transactions/get</div>
+            <div class="item-data-row__description">Retrieve transactions for credit and depository accounts.</div>
+        </div>
+        <div class="item-data-row__right">
+            <button id="get-transactions-btn" class="button button--is-small button--is-default button--is-full-width">Get Transactions</button>
+        </div>
+        <div class="item-data-row__response">
+            <table><tbody id="get-transactions-data"></tbody></table>
+        </div>
+    </div>
+
+    <!-- Identity -->
+    <div class="item-data-row">
+        <div class="item-data-row__left">
+            <div class="item-data-row__request-type">post</div>
+        </div>
+        <div class="item-data-row__center">
+            <div class="item-data-row__nicename">Identity</div>
+            <div class="item-data-row__endpoint">/identity/get</div>
+            <div class="item-data-row__description">Retrieve Identity information on file with the bank. Reduce fraud by comparing user-submitted data to validate identity.</div>
+        </div>
+        <div class="item-data-row__right">
+            <button id="get-identity-btn" class="button button--is-small button--is-default button--is-full-width">Get Identity</button>
+        </div>
+        <div class="item-data-row__response">
+            <table><tbody id="get-identity-data"></tbody></table>
+        </div>
+    </div>
+
+    <!-- Balance -->
+    <div class="item-data-row">
+        <div class="item-data-row__left">
+            <div class="item-data-row__request-type">post</div>
+        </div>
+        <div class="item-data-row__center">
+            <div class="item-data-row__nicename">Balance</div>
+            <div class="item-data-row__endpoint">/accounts/balance/get</div>
+            <div class="item-data-row__description">Check balances in real time to prevent non-sufficient funds fees.</div>
+        </div>
+        <div class="item-data-row__right">
+            <button id="get-balance-btn" class="button button--is-small button--is-default button--is-full-width">Get Balance</button>
+        </div>
+        <div class="item-data-row__response">
+            <table><tbody id="get-balance-data"></tbody></table>
+        </div>
+    </div>
+    <div class="item-data-row">
+        <div class="item-data-row__left">
+            <div class="item-data-row__request-type">post</div>
+        </div>
+        <div class="item-data-row__center">
+            <div class="item-data-row__endpoint">/item/get</div>
+            <div class="item-data-row__description">Retrieve information about an Item, like the institution, billed products, available products, and webhook information.</div>
+        </div>
+
+        <div class="item-data-row__right">
+            <button id="get-item-btn" class="button button--is-small button--is-default button--is-full-width">Get Item Info</button>
+        </div>
+
+        <div class="item-data-row__response">
+            <table><tbody id="get-item-data"></tbody></table>
+        </div>
+    </div>
+
+    <div class="item-data-row">
+        <div class="item-data-row__left">
+            <div class="item-data-row__request-type">post</div>
+        </div>
+        <div class="item-data-row__center">
+            <div class="item-data-row__endpoint">/accounts/get</div>
+            <div class="item-data-row__description">Retrieve high-level information about all accounts associated with an Item.</div>
+        </div>
+
+        <div class="item-data-row__right">
+            <button id="get-accounts-btn" class="button button--is-small button--is-default button--is-full-width">Get Account Info</button>
+        </div>
+
+        <div class="item-data-row__response">
+            <table><tbody id="get-accounts-data"></tbody></table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    $('#get-transactions-btn').on('click', function(e) {
+        $.ajax({
+            url: "/api/get_transactions/",
+            type: 'POST',
+            headers: {
+                "X-CSRFToken": '{{ csrf_token }}'
+            },
+        })
+
+
+            .done(function(data) {
+                if (data.error != null && data.error.error_code != null) {
+                    // Format the error
+                    var errorHtml = '<div class="inner"><p>' +
+                        '<strong>' + data.error.error_code + ':</strong> ' +
+                        (data.error.display_message == null ? data.error.error_message : data.error.display_message)  + '</p></div>';
+
+                    if (data.error.error_code === 'PRODUCT_NOT_READY') {
+                        // Add additional context for `PRODUCT_NOT_READY` errors
+                        errorHtml += '<div class="inner"><p>Note: The PRODUCT_NOT_READY ' +
+                            'error is returned when a request to retrieve Transaction data ' +
+                            'is made before Plaid finishes the <a href="https://plaid.com/' +
+                            'docs/quickstart/#transaction-data-with-webhooks">initial ' +
+                            'transaction pull.</a></p></div>';
+                    }
+                    // Render the error
+                    $('#get-transactions-data').slideUp(function() {
+                        $(this).slideUp(function() {
+                            $(this).html(errorHtml).slideDown();
+                        });
+                    });
+                } else {
+                    $('#get-transactions-data').slideUp(function() {
+                        var html = '<tr><td><strong>Name</strong></td><td><strong>Amount</strong></td><td><strong>Date</strong></td></tr>';
+                        data.transactions.transactions.forEach(function(txn, idx) {
+                            html += '<tr>';
+                            html += '<td>' + txn.name + '</td>';
+                            html += '<td>$' + txn.amount + '</td>';
+                            html += '<td>' + txn.date + '</td>';
+                            html += '</tr>';
+                        });
+
+                        $(this).slideUp(function() {
+                            $(this).html(html).slideDown();
+                        });
+                    });
+                }
+            });
+    });
+
+</script>
+{% load static %}
+<script src="{% static "script.js" %}"></script>
+</body>
+</html>
+
