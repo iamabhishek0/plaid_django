@@ -3,9 +3,7 @@ import json
 import plaid
 import requests
 from django.http import HttpResponse
-from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -72,9 +70,69 @@ class get_transaction(APIView):
             except plaid.errors.PlaidError as e:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(data=transactions_response, status=status.HTTP_200_OK)
+            return Response(data={'error': None, 'transactions': transactions_response}, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class get_identity(APIView):
+    def get(self, request):
+        item = Item.objects.filter(user=self.request.user)
+        if item.count() > 0:
+            access_token = item.values('access_token')[0]['access_token']
+            try:
+                identity_response = client.Identity.get(access_token)
+            except plaid.errors.PlaidError as e:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(data={'error': None, 'identity': identity_response}, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+class get_balance(APIView):
+    def get(self, request):
+        item = Item.objects.filter(user=self.request.user)
+        if item.count() > 0:
+            access_token = item.values('access_token')[0]['access_token']
+            try:
+                balance_response = client.Accounts.balance.get(access_token)
+            except plaid.errors.PlaidError as e:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(data={'error': None, 'balance': balance_response}, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+class get_item_info(APIView):
+    def get(self, request):
+        item = Item.objects.filter(user=self.request.user)
+        if item.count() > 0:
+            access_token = item.values('access_token')[0]['access_token']
+            try:
+                item_response = client.Item.get(access_token)
+                institution_response = client.Institutions.get_by_id(item_response['item']['institution_id'])
+            except plaid.errors.PlaidError as e:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(data={'error': None, 'item': item_response['item'], 'institution': institution_response['institution']}, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+class get_account_info(APIView):
+    def get(self, request):
+        item = Item.objects.filter(user=self.request.user)
+        if item.count() > 0:
+            access_token = item.values('access_token')[0]['access_token']
+            try:
+                accounts_response = client.Accounts.get(access_token)
+            except plaid.errors.PlaidError as e:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(data={'accounts': accounts_response, 'error': None, }, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 @csrf_exempt
