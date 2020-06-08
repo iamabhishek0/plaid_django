@@ -3,7 +3,9 @@ import json
 import plaid
 import requests
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -37,17 +39,17 @@ class get_access_token(APIView):
     Exchanges Public token for access token
     """
     def post(self, request):
-        public_token = create_public_token()['public_token']
+        request_data = request.POST
+        public_token = request_data.get('public_token')
         try:
             exchange_response = client.Item.public_token.exchange(public_token)
             serializer = AccessToken(data=exchange_response)
             if serializer.is_valid():
-                if Item.objects.filter(user=self.request.user).count() == 0:
-                    item = Item.objects.create(access_token=serializer.validated_data['access_token'],
-                                               item_id=serializer.validated_data['item_id'],
-                                               user=self.request.user
-                                               )
-                    item.save()
+                item = Item.objects.create(access_token=serializer.validated_data['access_token'],
+                                           item_id=serializer.validated_data['item_id'],
+                                           user=self.request.user
+                                           )
+                item.save()
 
         except plaid.errors.PlaidError as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
