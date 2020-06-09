@@ -10,9 +10,10 @@ from rest_framework import status
 from .serializers import AccessToken
 from .keys import *
 from .models import Item
+from .tasks import fetch_transactions
 
 
-client = plaid.Client(client_id = PLAID_CLIENT_ID, secret=PLAID_SECRET,
+client = plaid.Client(client_id=PLAID_CLIENT_ID, secret=PLAID_SECRET,
                       public_key=PLAID_PUBLIC_KEY, environment=PLAID_ENV, api_version='2019-05-29')
 
 
@@ -36,18 +37,24 @@ class get_access_token(APIView):
     """
     Exchanges Public token for access token
     """
+
     def post(self, request):
-        request_data = request.POST
-        public_token = request_data.get('public_token')
+        # request_data = request.POST
+        # public_token = request_data.get('public_token')
+        public_token = create_public_token()['public_token']
         try:
             exchange_response = client.Item.public_token.exchange(public_token)
             serializer = AccessToken(data=exchange_response)
             if serializer.is_valid():
-                item = Item.objects.create(access_token=serializer.validated_data['access_token'],
-                                           item_id=serializer.validated_data['item_id'],
-                                           user=self.request.user
-                                           )
+                access_token = serializer.validated_data['access_token']
+                item = Item.objects.create(access_token=access_token,
+                                        item_id=serializer.validated_data['item_id'],
+                                        user=self.request.user
+                                        )
                 item.save()
+
+                # Async Task
+                fetch_transactions.delay(access_token)
 
         except plaid.errors.PlaidError as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -62,11 +69,13 @@ class get_transaction(APIView):
             access_token = item.values('access_token')[0]['access_token']
 
             # transaction of two years i.e. 730 days
-            start_date = '{:%Y-%m-%d}'.format(datetime.datetime.now() + datetime.timedelta(-730))
+            start_date = '{:%Y-%m-%d}'.format(
+                datetime.datetime.now() + datetime.timedelta(-730))
             end_date = '{:%Y-%m-%d}'.format(datetime.datetime.now())
 
             try:
-                transactions_response = client.Transactions.get(access_token, start_date, end_date)
+                transactions_response = client.Transactions.get(
+                    access_token, start_date, end_date)
             except plaid.errors.PlaidError as e:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -88,6 +97,7 @@ class get_identity(APIView):
             return Response(data={'error': None, 'identity': identity_response}, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 
 class get_balance(APIView):
     def get(self, request):
@@ -111,7 +121,8 @@ class get_item_info(APIView):
             access_token = item.values('access_token')[0]['access_token']
             try:
                 item_response = client.Item.get(access_token)
-                institution_response = client.Institutions.get_by_id(item_response['item']['institution_id'])
+                institution_response = client.Institutions.get_by_id(
+                    item_response['item']['institution_id'])
             except plaid.errors.PlaidError as e:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
