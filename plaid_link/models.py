@@ -11,8 +11,8 @@ class Item(models.Model):
 class Account(models.Model):
     account_id = models.CharField(max_length=100)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    balance_available = models.IntegerField(default=None, null=True)
-    balance_current = models.IntegerField()
+    balance_available = models.FloatField(default=None, null=True)
+    balance_current = models.FloatField()
 
 
 class Transaction(models.Model):

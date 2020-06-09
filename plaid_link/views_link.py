@@ -39,9 +39,9 @@ class get_access_token(APIView):
     """
 
     def post(self, request):
-        # request_data = request.POST
-        # public_token = request_data.get('public_token')
-        public_token = create_public_token()['public_token']
+        request_data = request.POST
+        public_token = request_data.get('public_token')
+        # public_token = create_public_token()['public_token']
         try:
             exchange_response = client.Item.public_token.exchange(public_token)
             serializer = AccessToken(data=exchange_response)
