@@ -15,6 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Item
 from .keys import *
 
+
 class UserCreate(APIView):
     """
     Creates the user.
@@ -48,7 +49,8 @@ class UserLogin(APIView):
             user = authenticate(username=username,
                                 password=password)
             if user is None:
-                raise serializers.ValidationError("Invalid username/password. Please try again!")
+                raise serializers.ValidationError(
+                    "Invalid username/password. Please try again!")
             else:
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
@@ -78,6 +80,7 @@ class UserLogout(APIView):
         data = {'success': 'Successfully logged out'}
         return Response(data=data, status=status.HTTP_200_OK)
 
+
 @login_required(login_url=LOGIN_REDIRECT_URL)
 def index(request):
     keys = {
@@ -88,6 +91,7 @@ def index(request):
 
     }
     return render(request, "oauth.html", context=keys)
+
 
 @login_required(login_url=LOGIN_REDIRECT_URL)
 def home(request):

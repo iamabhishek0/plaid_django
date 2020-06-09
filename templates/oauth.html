@@ -2,7 +2,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
 <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 <script type="text/javascript">
-    (function($) {
+    (function ($) {
         var handler = Plaid.create({
             clientName: 'Plaid Quickstart',
             // Optional, specify an array of ISO-3166-1 alpha-2 country
@@ -17,10 +17,10 @@
             webhook: 'https://requestb.in',
             // Optional, specify a language to localize Link
             language: 'en',
-            onLoad: function() {
+            onLoad: function () {
                 // Optional, called when Link loads
             },
-            onSuccess: function(public_token, metadata) {
+            onSuccess: function (public_token, metadata) {
                 // Send the public_token to your app server.
                 // The metadata object contains info about the institution the
                 // user selected and the account ID or IDs, if the
@@ -29,28 +29,28 @@
                 $.ajax({
                     url: "/api/get_access_token/",
                     type: 'POST',
-                    headers:{
+                    headers: {
                         "X-CSRFToken": '{{ csrf_token }}'
                     },
-                    data:{'public_token':public_token},
+                    data: { 'public_token': public_token },
 
-                    success: function(response){
+                    success: function (response) {
                         window.location.href = "/api/home/";
                     }
 
 
                 });
             },
-            onExit: function(err, metadata) {
+            onExit: function (err, metadata) {
                 // The user exited the Link flow.
                 if (err != null) {
-                                    }
+                }
             },
-            onEvent: function(eventName, metadata) {
+            onEvent: function (eventName, metadata) {
             }
         });
 
-        $('#link-button').on('click', function(e) {
+        $('#link-button').on('click', function (e) {
             handler.open();
         });
     })(jQuery);
