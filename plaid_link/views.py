@@ -1,9 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from plaid_django.settings import LOGIN_REDIRECT_URL
 from plaid_link.serializers import UserSerializer, UserLoginSerializer
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, logout, login
@@ -73,10 +75,10 @@ class UserLogout(APIView):
             pass
 
         logout(request)
-        data = {'success': 'Sucessfully logged out'}
+        data = {'success': 'Successfully logged out'}
         return Response(data=data, status=status.HTTP_200_OK)
 
-
+@login_required(login_url=LOGIN_REDIRECT_URL)
 def index(request):
     keys = {
         'plaid_public_key': PLAID_PUBLIC_KEY,
@@ -87,7 +89,11 @@ def index(request):
     }
     return render(request, "oauth.html", context=keys)
 
-
+@login_required(login_url=LOGIN_REDIRECT_URL)
 def home(request):
     items = Item.objects.filter(user=request.user)
     return render(request, 'home.html', {'items': items})
+
+
+def loginview(request):
+    return render(request, "login.html")
