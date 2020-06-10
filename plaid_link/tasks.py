@@ -1,4 +1,3 @@
-# Create your tasks here
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 import datetime
@@ -17,13 +16,25 @@ def add(x, y):
 
 
 @shared_task
-def fetch_transactions(access_token):
+def delete_transactions(item_id, removed_transactions):
+    for transaction in removed_transactions:
+        Transaction.objects.filter(transaction_id=transaction).delete()
+
+
+@shared_task
+def fetch_transactions(access_token=None, item_id=None, new_transactions=500):
+    if access_token is None:
+        access_token = Item.objects.filter(item_id = item_id)[0]['access_token']
+
     # transaction of two years i.e. 730 days
     start_date = '{:%Y-%m-%d}'.format(
         datetime.datetime.now() + datetime.timedelta(-730))
     end_date = '{:%Y-%m-%d}'.format(datetime.datetime.now())
+
     transactions_response = client.Transactions.get(
-        access_token, start_date, end_date)
+        access_token, start_date, end_date, {
+            count: new_transactions,
+            })
 
     accounts = transactions_response['accounts']
     transactions = transactions_response['transactions']

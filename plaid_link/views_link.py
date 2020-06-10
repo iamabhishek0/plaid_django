@@ -10,7 +10,7 @@ from rest_framework import status
 from .serializers import AccessToken
 from .keys import *
 from .models import Item
-from .tasks import fetch_transactions
+from .tasks import delete_transactions, fetch_transactions
 
 
 client = plaid.Client(client_id=PLAID_CLIENT_ID, secret=PLAID_SECRET,
@@ -48,9 +48,9 @@ class get_access_token(APIView):
             if serializer.is_valid():
                 access_token = serializer.validated_data['access_token']
                 item = Item.objects.create(access_token=access_token,
-                                        item_id=serializer.validated_data['item_id'],
-                                        user=self.request.user
-                                        )
+                                           item_id=serializer.validated_data['item_id'],
+                                           user=self.request.user
+                                           )
                 item.save()
 
                 # Async Task
@@ -148,4 +148,18 @@ class get_account_info(APIView):
 
 @csrf_exempt
 def webhook(request):
+    request_data = request.POST
+    webhook_type = request_data.get('webhook_type')
+    webhook_code = request_data.get('webhook_code')
+
+    if webhook_type == 'TRANSACTIONS':
+        item_id = request_data.get('item_id')
+        if webhook_code == 'TRANSACTIONS_REMOVED':
+            removed_transactions = request_data.get('removed_transactions')
+            delete_transactions.delay(item_id, removed_transactions)
+
+        else:
+            new_transactions = request_data.get('new_transactions')
+            fetch_transactions.delay(None, item_id, new_transactions)
+
     return HttpResponse('Webhook received', status=status.HTTP_202_ACCEPTED)
