@@ -24,33 +24,34 @@ def delete_transactions(item_id, removed_transactions):
 @shared_task
 def fetch_transactions(access_token=None, item_id=None, new_transactions=500):
     if access_token is None:
-        access_token = Item.objects.filter(item_id = item_id)[0]['access_token']
+        access_token = Item.objects.filter(item_id=item_id)[0].access_token
 
-    # transaction of two years i.e. 730 days
+    # transactions of two years i.e. 730 days
     start_date = '{:%Y-%m-%d}'.format(
         datetime.datetime.now() + datetime.timedelta(-730))
     end_date = '{:%Y-%m-%d}'.format(datetime.datetime.now())
 
     transactions_response = client.Transactions.get(
         access_token, start_date, end_date, {
-            count: new_transactions,
-            })
+            'count': new_transactions,
+        })
 
+    if item_id is None:
+        item_id = transactions_response['item']['item_id']
+    item = Item.objects.filter(item_id=item_id)[0]
+    
     accounts = transactions_response['accounts']
     transactions = transactions_response['transactions']
-    item_id = transactions_response['item']['item_id']
 
     for account in accounts:
-        account_obj = Account.objects.filter(account_id=account['account_id'])
-        if(account_obj.count() > 0):
-            for a in account_obj:
+        account_list = Account.objects.filter(account_id=account['account_id'])
+        if account_list.count() > 0:
+            for a in account_list:
                 a.balance_available = account['balances']['available']
                 a.balance_current = account['balances']['current']
                 a.save()
 
         else:
-            # item = Item.objects.filter(access_token=access_token)[0]
-            item = Item.objects.filter(item_id=item_id)[0]
             account_obj = Account.objects.create(
                 item=item,
                 account_id=account['account_id'],
@@ -59,18 +60,21 @@ def fetch_transactions(access_token=None, item_id=None, new_transactions=500):
 
             account_obj.save()
 
+    transaction_list = Transaction.objects.filter(
+        account__item=item).order_by('-date')
+    transaction_list_count = transaction_list.count()
+    index = 0
     for transaction in transactions:
-        transaction_obj = Transaction.objects.filter(
-            transaction_id=transaction['transaction_id'])
-        if(transaction_obj.count() > 0):
-            for a in account_obj:
-                a.amount = transaction['amount']
-                a.pending = transaction['pending']
-                a.save()
+        if transaction_list_count > 0 and transaction['transaction_id'] == transaction_list[index].transaction_id:
+            transaction_list[index].amount = transaction['amount']
+            transaction_list[index].pending = transaction['pending']
+            transaction_list[index].save()
+            index += 1
 
         else:
             account_ = Account.objects.filter(
                 account_id=transaction['account_id'])[0]
+
             transaction_obj = Transaction.objects.create(
                 transaction_id=transaction['transaction_id'],
                 account=account_,
