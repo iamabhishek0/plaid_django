@@ -25,3 +25,7 @@ def home(request):
 
 def loginview(request):
     return render(request, "login.html")
+
+
+def signupview(request):
+    return render(request, "signup.html")

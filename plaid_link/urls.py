@@ -4,6 +4,7 @@ from . import views, views_api
 urlpatterns = [
     path('', views.index, name="index"),
     path('home/', views.home, name="home"),
+    path("signup/", views.signupview, name='signup'),
     path("login/", views.loginview, name='login'),
 
     # URLs to the REST API's
