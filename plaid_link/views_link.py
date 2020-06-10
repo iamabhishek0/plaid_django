@@ -68,7 +68,7 @@ class get_transaction(APIView):
         if item.count() > 0:
             access_token = item.values('access_token')[0]['access_token']
 
-            # transaction of two years i.e. 730 days
+            # transactions of two years i.e. 730 days
             start_date = '{:%Y-%m-%d}'.format(
                 datetime.datetime.now() + datetime.timedelta(-730))
             end_date = '{:%Y-%m-%d}'.format(datetime.datetime.now())
