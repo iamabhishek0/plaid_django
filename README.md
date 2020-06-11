@@ -7,6 +7,8 @@ Plaid​ is an account aggregation service where users can login with their bank
 
 * Each `​Item​` can have many associated accounts, which hold information such as balance, name, and account type
 
+    ![img](media/plaid_model.jpg)
+
 * **Credit and depository**​ accounts can have `Transactions` associated with them
 
 # Setting Up
