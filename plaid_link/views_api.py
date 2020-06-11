@@ -20,10 +20,8 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Item
 from .keys import *
 
-
 client = plaid.Client(client_id=PLAID_CLIENT_ID, secret=PLAID_SECRET,
                       public_key=PLAID_PUBLIC_KEY, environment=PLAID_ENV, api_version='2019-05-29')
-
 
 
 class UserCreate(APIView):
@@ -95,11 +93,11 @@ class get_access_token(APIView):
     """
     Exchanges Public token for access token
     """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         request_data = request.POST
         public_token = request_data.get('public_token')
-        # public_token = create_public_token()['public_token']
         try:
             exchange_response = client.Item.public_token.exchange(public_token)
             serializer = AccessToken(data=exchange_response)
@@ -121,6 +119,11 @@ class get_access_token(APIView):
 
 
 class get_transaction(APIView):
+    """
+    Retrieve transactions for credit and depository accounts.
+    """
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         item = Item.objects.filter(user=self.request.user)
         if item.count() > 0:
@@ -143,6 +146,11 @@ class get_transaction(APIView):
 
 
 class get_identity(APIView):
+    """
+    Retrieve Identity information on file with the bank.
+    """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         item = Item.objects.filter(user=self.request.user)
         if item.count() > 0:
@@ -158,6 +166,11 @@ class get_identity(APIView):
 
 
 class get_balance(APIView):
+    """
+    Gets all the information about balance of the Item.
+    """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         item = Item.objects.filter(user=self.request.user)
         if item.count() > 0:
@@ -173,6 +186,12 @@ class get_balance(APIView):
 
 
 class get_item_info(APIView):
+    """
+    Retrieve information about an Item, like the institution, billed products,
+    available products, and webhook information.
+    """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         item = Item.objects.filter(user=self.request.user)
         if item.count() > 0:
@@ -184,12 +203,19 @@ class get_item_info(APIView):
             except plaid.errors.PlaidError as e:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(data={'error': None, 'item': item_response['item'], 'institution': institution_response['institution']}, status=status.HTTP_200_OK)
+            return Response(
+                data={'error': None, 'item': item_response['item'], 'institution': institution_response['institution']},
+                status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 class get_account_info(APIView):
+    """
+    Retrieve high-level information about all accounts associated with an Item.
+    """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         item = Item.objects.filter(user=self.request.user)
         if item.count() > 0:
