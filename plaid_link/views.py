@@ -20,7 +20,22 @@ def index(request):
 @login_required(login_url=LOGIN_REDIRECT_URL)
 def home(request):
     items = Item.objects.filter(user=request.user)
-    return render(request, 'home.html', {'items': items})
+    user = request.user
+    transactions_query = items.values_list('account__transaction__name', "account__transaction__amount",
+                                           'account__transaction__date').all()
+    transactions = []
+    cnt = 0
+    for x in transactions_query:
+        if cnt > 30:
+            break
+        if x[0]:
+            x = {"name": x[0], "amount": x[1], "date": str(x[2])}
+            transactions.append(x)
+            cnt = cnt + 1
+    if items.count() > 0:
+        return render(request, 'home.html',
+                      {'items': items, 'user': user, 'have_access_token': True, 'transactions': transactions})
+    return render(request, 'home.html', {'user': user, 'have_access_token': False})
 
 
 def loginview(request):
