@@ -1,6 +1,6 @@
 # Plaid Django
 
-[Plaid](https://plaid.com/docs/)​ is an account aggregation service where users can login with their bank credentials and plaid fetches last two years of transaction and account balance data for their bank account. This project is its implementation using Django.
+[Plaid](https://plaid.com/docs/)​ is an account aggregation service where users can login with their bank credentials and plaid fetches last two years of transaction and account balance data for their bank account. The project aims at providing endpoints for the Plaid. The transaction records data is recieved from the plaid server and stored in the database asynchronously using threads. The server also send data via webhooks which is also managed and stored into the database asynchronously. This project is implemented using Django.
 
 * `Item`​ , a set of credentials (map of key value pairs) associated with a financial institution and a user.
   * Users can have multiple Items for multiple financial institutions.
